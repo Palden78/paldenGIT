@@ -40,6 +40,16 @@ argparser = argparse.ArgumentParser(description="The smartest content tracker")
 argsubparsers = argparser.add_subparsers(title="Commands", dest="command")
 argsubparsers.required = True 
 
+# handling our init commands arguments
+argsp = argsubparsers.add_parser("init", help="Initialize a new, empty repository.")
+argsp.add_argument("path",
+                   metavar="directory",
+                   # 0 or 1 args
+                   nargs="?",
+                   default=".",
+                   help="Where to create the repository.")
+
+
 
 """
 Main function calls the bridges functions that represent a specific git command
@@ -186,3 +196,6 @@ def repo_default_config():
     return ret
 
 
+
+def cmd_init(args):
+    repo_create(args.path)
