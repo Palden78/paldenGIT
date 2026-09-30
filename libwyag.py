@@ -49,6 +49,17 @@ argsp.add_argument("path",
                    default=".",
                    help="Where to create the repository.")
 
+argsp = argsubparsers.add_parser("cat-file",
+        help="Provide content of repository objects")
+argsp.add_argument("type",
+                   metavar="type",
+                   choices=["blob", "commit", "tag", "tree"],
+                   help="Specify the type")
+argsp.add_argument("object",
+                   metavar="object",
+                   help="The object to display")
+
+
 
 
 """
@@ -132,6 +143,23 @@ class GitObject (object):
 
     def init(self):
         pass # Just do nothing. This is a reasonable default!
+
+
+"""
+Notes:
+Git had 4 header types 
+blob , commit, tag and tree
+Blobs - simplest user data, content of every file you put in git
+e.g. main.c , logo.png, README.md is stored as a blob
+Easy to manipulate no actual syntax or constraints
+Serialize and Deserialise just stores and returns their input unmodified
+"""
+class GitBlob(GitObject):
+    fmt = b'blob'
+    def serialize(self):
+        return self.blobdata
+    def deserialize(self, data):
+        self.blobdata = data
 
 """
 function variadic, so it can be called with multiple path components as separate arguments. For example, repo_path(repo, "objects", "df", "4ec9fc2ad990cb9da906a95a6eda6627d7b7b0")
@@ -279,3 +307,37 @@ def object_read(repo, sha):
 
         # Call constructor and return object
         return c(raw[y+1:])
+
+def object_write(obj, repo=None):
+    # Serialize object data
+    data = obj.serialize()
+    # Add header
+    result = obj.fmt + b' ' + str(len(data)).encode() + b'\x00' + data
+    # Compute hash
+    sha = hashlib.sha1(result).hexdigest()
+
+    if repo:
+        # Compute path
+        path=repo_file(repo, "objects", sha[0:2], sha[2:], mkdir=True)
+
+        if not os.path.exists(path):
+            with open(path, 'wb') as f:
+                # Compress and write
+                f.write(zlib.compress(result))
+    return sha
+
+
+def cmd_cat_file(args):
+    repo = repo_find()
+    cat_file(repo, args.object, fmt=args.type.encode())
+
+def cat_file(repo, obj, fmt = None):
+    obj = object_read(repo, object_find(repo, obj, fmt = fmt))
+    sys.stdout.buffer.write(obj.serialize())
+
+"""
+Git has lots of ways to refer to objects full hash, short hash, tags
+object_find() will be our name resolution func
+"""
+def object_find(repo, name, fmt=None, follow=True):
+    return name
