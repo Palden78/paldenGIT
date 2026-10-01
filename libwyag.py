@@ -384,6 +384,9 @@ def object_hash(fd, fmt, repo=None):
 
     return object_write(obj, repo)
 
+"""
+Key-Value List with Message parser
+"""
 def kvlm_parse(raw, start=0, dct=None):
     if not dct:
         dct = dict()
@@ -438,3 +441,40 @@ def kvlm_parse(raw, start=0, dct=None):
         dct[key]=value
 
     return kvlm_parse(raw, start=end+1, dct=dct)
+
+# write all fields first then a newline, the message and final newline
+def kvlm_serialize(kvlm):
+    ret = b''
+
+    #output fields
+    for key in kvlm.keys():
+
+        #Skip the message itself
+        if key == None:
+            continue
+
+        value = kvlm[key]
+
+        #normalize to a list
+        if type(value) != list:
+            value = [value]
+
+        for x in value:
+            ret += key + b' ' + (x.replace(b'\n', b'\n ')) + b'\n'
+
+    #Append message
+    ret += b'\n' + kvlm[None]
+
+    return ret 
+
+class GitCommit(GitObject):
+    fmt=b'commit'
+
+    def deserialize(self, data):
+        self.kvlm = kvlm_parse(data)
+
+    def serialize(self):
+        return kvlm_serialize(self.kvlm)
+
+    def init(self):
+        self.kvlm = dict()
