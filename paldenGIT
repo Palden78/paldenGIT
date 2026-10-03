@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
 
-import libwyag
-libwyag.main()
+import CustomGIT_VC_proj.git as git
+git.main()
 
