@@ -220,6 +220,49 @@ def repo_dir(repo, *path, mkdir=False):
         return None
 
 
+class GitTreeLeaf(object):
+    def __init__(self, mode, path, sha):
+        self.mode = mode
+        self.path = path
+        self.sha = sha
+"""
+A tree obj is the repetition of the same fundamental data structure, we write the parser in 2 functions,
+first a parser to extract a single record, returns parsed data and the position it reached in input data
+"""
+def tree_parse_one(raw, start=0):
+    # [mode] space [path] 0x00 [sha-1]
+    x = raw.find(b' ', start )
+    assert x-start == 5 or x-start == 6 
+
+    mode = raw[start:x]
+    if len(mode) == 5:
+        #normalise to 6 bytes
+        mode = b"0" + mode
+
+    # Find the NULL terminator of the path
+    y = raw.find(b'\x00', x)
+    # and read the path
+    path = raw[x+1:y]
+
+    # Read the SHA…
+    raw_sha = int.from_bytes(raw[y+1:y+21], "big")
+    # and convert it into an hex string, padded to 40 chars
+    # with zeros if needed.
+    sha = format(raw_sha, "040x")
+    return y+21, GitTreeLeaf(mode, path.decode("utf8"), sha)
+
+def tree_parse(raw):
+    pos = 0
+    max = len(raw)
+    ret = list()
+    while pos < max:
+        pos, data = tree_parse_one(raw, pos)
+        ret.append(data)
+
+    return ret
+        
+
+
 
 def repo_create(path):
     """Create a new repository at path."""
