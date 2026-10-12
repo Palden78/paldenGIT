@@ -85,3 +85,29 @@ Mode is just the file’s mode, path is its location. The SHA-1 refers to either
 A path is a single filesystem entry
 
 The path identifies exactly one file or directory. Not two, not three. If you have five levels of nested directories, even if four are empty save the next directory, you’re going to need five tree objects recursively referring to one another. You cannot take the shortcut of putting a full path in a single tree entry, like dir1/dir2/dir3/dir4/dir5.
+
+
+7.2. Tags as references
+The most simple use of refs is tags. A tag is just a user-defined name for an object, often a commit. A very common use of tags is identifying software releases: You’ve just merged the last commit of, say, version 12.78.52 of your program, so your most recent commit (let’s call it 6071c08) is your version 12.78.52. To make this association explicit, all you have to do is:
+
+git tag v12.78.52 6071c08
+# the object hash ^here^^ is optional and defaults to HEAD.
+This creates a new tag, called v12.78.52, pointing at 6071c08. Tagging is like aliasing: a tag introduces a new way to refer to an existing object. After the tag is created, the name v12.78.52 refers to 6071c08. For example, these two commands are now perfectly equivalent:
+
+git checkout v12.78.52
+git checkout 6071c08
+
+
+7.3. Lightweight tags and tag objects, and parsing the latter
+You’ve probably guessed already that tags are actually refs. They live in the .git/refs/tags/ hierarchy. The only point worth noting is that they come in two flavors: lightweight tags and tags objects.
+
+“Lightweight” tags
+are just regular refs to a commit, a tree or a blob.
+Tag objects
+are regular refs pointing to an object of type tag. Unlike lightweight tags, tag objects have an author, a date, an optional PGP signature and an optional annotation. Their format is the same as a commit object.
+We don’t even need to implement tag objects, we can reuse GitCommit and just change the fmt field:
+
+class GitTag(GitCommit):
+    fmt = b'tag'
+And now we support tags.
+
