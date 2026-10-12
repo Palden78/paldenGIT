@@ -111,3 +111,30 @@ class GitTag(GitCommit):
     fmt = b'tag'
 And now we support tags.
 
+7.4. The tag command
+Let’s add the tag command. In Git, it does two things: it creates a new tag or list existing tags (by default). So you can invoke it with:
+
+git tag                  # List all tags
+git tag NAME [OBJECT]    # create a new *lightweight* tag NAME, pointing
+                         # at HEAD (default) or OBJECT
+git tag -a NAME [OBJECT] # create a new tag *object* NAME, pointing at
+                         # HEAD (default) or OBJECT
+
+
+7.5. What’s a branch?
+Tags are done. Now for another big chunk: branches.
+
+It’s time to address the elephant in the room: like most Git users, wyag still doesn’t have any idea what a branch is. It currently treats a repository as a bunch of disorganized objects, some of them commits, and has no representation whatsoever of the fact that commits are grouped in branches, and that at every point in time there’s a commit that’s HEAD, ie, the head commit (or “tip”) of the active branch.
+
+So, what’s a branch? The answer is actually surprisingly simple, but it may also end up being simply surprising: a branch is a reference to a commit. You could even say that a branch is a kind of a name for a commit. In this regard, a branch is exactly the same thing as a tag. Tags are refs that live in .git/refs/tags, branches are refs that live in .git/refs/heads.
+
+There are, of course, differences between a branch and a tag:
+
+Branches are references to a commit, tags can refer to any object;
+Most importantly, the branch ref is updated at each commit. This means that whenever you commit, Git actually does this:
+a new commit object is created, with the current branch’s (commit!) ID as its parent;
+the commit object is hashed and stored;
+the branch ref is updated to refer to the new commit’s hash.
+That’s all.
+
+But what about the current branch? It’s actually even easier. It’s a ref file outside of the refs hierarchy, in .git/HEAD, which is an indirect ref (that is, it is of the form ref: path/to/other/ref, and not a simple hash).
