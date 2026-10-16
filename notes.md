@@ -138,3 +138,7 @@ the branch ref is updated to refer to the new commit’s hash.
 That’s all.
 
 But what about the current branch? It’s actually even easier. It’s a ref file outside of the refs hierarchy, in .git/HEAD, which is an indirect ref (that is, it is of the form ref: path/to/other/ref, and not a simple hash).
+
+Detached HEAD
+
+When you just checkout a random commit, git will warn you it’s in “detached HEAD state”. This means you’re not on any branch anymore. In this case, .git/HEAD is a direct reference: it contains a SHA-1.

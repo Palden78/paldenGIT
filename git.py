@@ -113,6 +113,23 @@ argsp = argsubparsers.add_parser(
     "show-ref",
     help="List references."
 )
+
+
+# rev-parse command, 
+argsp = argsubparsers.add_parser(
+    "rev-parse",
+    help="Parse revision (or other objects) identifiers")
+
+argsp.add_argument("--wyag-type",
+                   metavar="type",
+                   dest="type",
+                   choices=["blob", "commit", "tag", "tree"],
+                   default=None,
+                   help="Specify the expected type")
+
+argsp.add_argument("name",
+                   help="The name to parse")
+
 def cmd_show_ref(args):
     repo = repo_find()
     refs = ref_list(repo)
@@ -130,6 +147,16 @@ def show_ref(repo, refs, with_hash=True, prefix=""):
         else:
             show_ref(repo,v,with_hash=with_hash,
                      prefix=f"{prefix}{k}")
+
+def cmd_rev_parse(args):
+    if args.type:
+        fmt = args.type.encode()
+    else:
+        fmt = None
+
+    repo = repo_find()
+
+    print (object_find(repo, args.name, fmt, follow=True))
 
 def cmd_checkout(args):
     repo = repo_find()
@@ -150,7 +177,40 @@ def cmd_checkout(args):
         os.makedirs(args.path)
 
     tree_checkout(repo, obj, os.path.realpath(args.path))
+def object_find(repo, name, fmt=None, follow=True):
+    sha = object_resolve(repo, name)
 
+    if not sha:
+        raise Exception(f"No such reference {name}.")
+
+    if len(sha) > 1:
+        raise Exception(f"Ambiguous reference {name}: Candidates are:\n - {'\n - '.join(sha)}.")
+
+    sha = sha[0]
+
+    if not fmt:
+        return sha
+
+    while True:
+        obj = object_read(repo, sha)
+        #     ^^^^^^^^^^^ < this is a bit agressive: we're reading
+        # the full object just to get its type.  And we're doing
+        # that in a loop, albeit normally short.  Don't expect
+        # high performance here.
+
+        if obj.fmt == fmt:
+            return sha
+
+        if not follow:
+            return None
+
+        # Follow tags
+        if obj.fmt == b'tag':
+            sha = obj.kvlm[b'object'].decode("ascii")
+        elif obj.fmt == b'commit' and fmt == b'tree':
+            sha = obj.kvlm[b'tree'].decode("ascii")
+        else:
+            return None
 def cmd_tag(args):
     repo = repo_find()
 
