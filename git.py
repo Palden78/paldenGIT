@@ -117,6 +117,38 @@ argsp = argsubparsers.add_parser(
 argsp = argsubparsers.add_parser("ls-files", help = "List all the stage files")
 argsp.add_argument("--verbose", action="store_true", help="Show everything.")
 
+argsp = argsubparsers.add_parser("check-ignore", help = "Check path(s) against ignore rules.")
+argsp.add_argument("path", nargs="+", help="Paths to check")
+
+def gitignore_parse1(raw):
+    raw = raw.strip() # Remove leading/trailing spaces
+
+    if not raw or raw[0] == "#":
+        return None
+    elif raw[0] == "!":
+        return (raw[1:], False)
+    elif raw[0] == "\\":
+        return (raw[1:], True)
+    else:
+        return (raw, True)
+
+def gitignore_parse(lines):
+    ret = list()
+
+    for line in lines:
+        parsed = gitignore_parse1(line)
+        if parsed:
+            ret.append(parsed)
+
+    return ret
+
+def cmd_check_ignore(args):
+    repo = repo_find()
+    rules = gitignore_read(repo)
+    for path in args.path:
+        if check_ignore(rules, path):
+            print(path)
+
 def cmd_ls_files(args):
     repo = repo_find()
     index = index_read(repo)
